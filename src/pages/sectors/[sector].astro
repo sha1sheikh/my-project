@@ -1,0 +1,51 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import SourceRefs from '../../components/SourceRefs.astro';
+import { getSourceMap, getActivitiesForSector, getAllOrganisations } from '../../lib/data';
+
+export async function getStaticPaths() {
+  const sectors = ['higher_education', 'health', 'public_affairs', 'security', 'media', 'politics'];
+  return sectors.map((s) => ({ params: { sector: s } }));
+}
+
+const { sector } = Astro.params;
+const sourceMap = await getSourceMap();
+const allOrgs = await getAllOrganisations();
+const orgName = (s: string) => allOrgs.find((o) => o.data.slug === s)?.data.legal_name ?? s;
+const publishedSlugs = new Set(allOrgs.filter((o) => o.data.status === 'published').map((o) => o.data.slug));
+
+function hasResolvedSources(sourceIds: string[]) {
+  return sourceIds.every((id) => sourceMap.has(id));
+}
+
+const activities = (await getActivitiesForSector(sector as string)).filter(
+  (a) => hasResolvedSources(a.data.source_ids) && publishedSlugs.has(a.data.org_slug)
+);
+
+const label = (sector as string).replace('_', ' ');
+---
+
+<Layout title={`Sector: ${label}`}>
+  <h1 class="text-2xl font-semibold tracking-tight capitalize">{label}</h1>
+  <p class="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+    Every sourced activity record across all organisations tagged with this sector, most recent first.
+  </p>
+
+  {activities.length === 0 ? (
+    <p class="mt-4 text-sm text-neutral-500">No sourced activity records for this sector yet.</p>
+  ) : (
+    <ol class="mt-6 space-y-3">
+      {activities.map((a) => (
+        <li class="border-l-2 border-neutral-300 pl-3 dark:border-neutral-700">
+          <div class="text-xs text-neutral-500">
+            {a.data.date} · <a href={`/organisations/${a.data.org_slug}`}>{orgName(a.data.org_slug)}</a> · {a.data.activity_type.replace('_', ' ')} · {a.data.confidence}
+          </div>
+          <p>
+            {a.data.description}
+            <SourceRefs sourceIds={a.data.source_ids} sourceMap={sourceMap} />
+          </p>
+        </li>
+      ))}
+    </ol>
+  )}
+</Layout>

@@ -1,0 +1,106 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Submit">
+  <h1 class="text-2xl font-semibold tracking-tight">Submit a record</h1>
+  <p class="mt-2 max-w-2xl text-neutral-800 dark:text-neutral-200">
+    This register covers <strong>organisations only</strong>. Do not submit anything about a
+    named individual — no officers, trustees, staff, or any other named person. Submit only what
+    a public document shows about an organisation's activity, funding, or affiliations.
+  </p>
+  <p class="mt-2 max-w-2xl text-sm text-neutral-600 dark:text-neutral-400">
+    Nothing submitted here is published automatically. Every submission enters a moderation
+    queue and is checked against the source document by a human reviewer before any record is
+    added or changed.
+  </p>
+
+  <form id="submit-form" class="mt-6 max-w-xl space-y-4 text-sm" novalidate>
+    <label class="block">
+      <span class="mb-1 block font-medium">Organisation name</span>
+      <input name="org_guess" required class="w-full border border-neutral-300 px-2 py-1.5 dark:border-neutral-700 dark:bg-neutral-900" />
+    </label>
+
+    <label class="block">
+      <span class="mb-1 block font-medium">Source URL</span>
+      <input name="source_url" type="url" required placeholder="https://…" class="w-full border border-neutral-300 px-2 py-1.5 dark:border-neutral-700 dark:bg-neutral-900" />
+      <span class="mt-1 block text-xs text-neutral-500">Link to the public document this is based on (filing, register entry, official publication, report).</span>
+    </label>
+
+    <label class="block">
+      <span class="mb-1 block font-medium">What the document shows</span>
+      <textarea name="claim_text" required rows="4" placeholder="State the organisational fact only, e.g. funding received, a meeting logged in a register, a consultation response filed." class="w-full border border-neutral-300 px-2 py-1.5 dark:border-neutral-700 dark:bg-neutral-900"></textarea>
+    </label>
+
+    <label class="block">
+      <span class="mb-1 block font-medium">Notes (optional)</span>
+      <textarea name="notes" rows="2" class="w-full border border-neutral-300 px-2 py-1.5 dark:border-neutral-700 dark:bg-neutral-900"></textarea>
+    </label>
+
+    <div id="form-error" class="hidden border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200"></div>
+    <div id="form-success" class="hidden border border-green-300 bg-green-50 p-3 text-sm text-green-800 dark:border-green-900 dark:bg-green-950 dark:text-green-200">
+      Submission received. It will be reviewed against its source before anything is published.
+    </div>
+
+    <button type="submit" class="border border-neutral-900 bg-neutral-900 px-4 py-2 text-white no-underline hover:bg-neutral-700 dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900">
+      Submit for review
+    </button>
+  </form>
+</Layout>
+
+<script>
+  import { containsLikelyPersonName } from '../lib/nameGuard';
+
+  const form = document.getElementById('submit-form') as HTMLFormElement;
+  const errorBox = document.getElementById('form-error') as HTMLDivElement;
+  const successBox = document.getElementById('form-success') as HTMLDivElement;
+
+  function showError(message: string) {
+    errorBox.textContent = message;
+    errorBox.classList.remove('hidden');
+    successBox.classList.add('hidden');
+  }
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    errorBox.classList.add('hidden');
+    successBox.classList.add('hidden');
+
+    const data = new FormData(form);
+    const org_guess = String(data.get('org_guess') ?? '').trim();
+    const source_url = String(data.get('source_url') ?? '').trim();
+    const claim_text = String(data.get('claim_text') ?? '').trim();
+    const notes = String(data.get('notes') ?? '').trim();
+
+    if (!org_guess || !source_url || !claim_text) {
+      showError('Organisation name, source URL and what the document shows are all required.');
+      return;
+    }
+    try {
+      new URL(source_url);
+    } catch {
+      showError('Source URL must be a valid URL.');
+      return;
+    }
+    if (containsLikelyPersonName(org_guess) || containsLikelyPersonName(claim_text)) {
+      showError(
+        'This looks like it names an individual. This register covers organisations only — please rephrase to describe the organisation and the document, not a person.'
+      );
+      return;
+    }
+
+    const res = await fetch('/.netlify/functions/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ org_guess, source_urls: [source_url], claim_text, notes }),
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      showError(body.error ?? 'Submission failed. Please try again later.');
+      return;
+    }
+    form.reset();
+    successBox.classList.remove('hidden');
+  });
+</script>

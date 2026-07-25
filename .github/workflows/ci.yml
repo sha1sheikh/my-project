@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Validate data (schemas, sourcing rules, banned fields)
+        run: npm run validate
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Build (validation also runs as part of the content build)
+        run: npm run build

@@ -1,0 +1,185 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import SourceRefs from '../../components/SourceRefs.astro';
+import {
+  getPublishedOrganisations,
+  getAllOrganisations,
+  getSourceMap,
+  getActivitiesForOrg,
+  getFundingForOrg,
+  getAffiliationsForOrg,
+  getRepliesForOrg,
+} from '../../lib/data';
+
+export async function getStaticPaths() {
+  const orgs = await getPublishedOrganisations();
+  return orgs.map((o) => ({ params: { slug: o.data.slug }, props: { org: o.data } }));
+}
+
+const { org } = Astro.props;
+const sourceMap = await getSourceMap();
+const allOrgs = await getAllOrganisations();
+const orgName = (s: string) => allOrgs.find((o) => o.data.slug === s)?.data.legal_name ?? s;
+
+function hasResolvedSources(sourceIds: string[]) {
+  return sourceIds.every((id) => sourceMap.has(id));
+}
+
+const activities = (await getActivitiesForOrg(org.slug)).filter((a) => hasResolvedSources(a.data.source_ids));
+const funding = await getFundingForOrg(org.slug);
+const fundingIn = funding.in.filter((f) => hasResolvedSources(f.data.source_ids));
+const fundingOut = funding.out.filter((f) => hasResolvedSources(f.data.source_ids));
+const affiliations = (await getAffiliationsForOrg(org.slug)).filter((a) => hasResolvedSources(a.data.source_ids));
+const replies = await getRepliesForOrg(org.slug);
+
+const companiesHouseUrl = org.companies_house_number
+  ? `https://find-and-update.company-information.service.gov.uk/company/${org.companies_house_number}`
+  : undefined;
+const charityCommissionUrl = org.charity_number
+  ? `https://register-of-charities.charitycommission.gov.uk/charity-search/-/charity-details/${org.charity_number}`
+  : undefined;
+
+const statusLabel: Record<string, string> = {
+  published: 'Published',
+  under_review: 'Under review',
+  right_of_reply_pending: 'Right of reply pending',
+};
+---
+
+<Layout title={org.legal_name} description={org.summary}>
+  <article>
+    <header>
+      <h1 class="text-2xl font-semibold tracking-tight">{org.legal_name}</h1>
+      {org.other_names.length > 0 && (
+        <p class="text-sm text-neutral-500">Also known as: {org.other_names.join(', ')}</p>
+      )}
+      <div class="mt-2 flex flex-wrap gap-1.5">
+        <span class="tag">{org.legal_type.replace('_', ' ')}</span>
+        {org.sectors.map((s: string) => <span class="tag">{s.replace('_', ' ')}</span>)}
+        <span class="tag">{statusLabel[org.status]}</span>
+      </div>
+
+      <dl class="mt-4 grid grid-cols-1 gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
+        <div><dt class="inline text-neutral-500">Jurisdiction: </dt><dd class="inline">{org.jurisdiction}</dd></div>
+        {org.founded && <div><dt class="inline text-neutral-500">Founded: </dt><dd class="inline">{org.founded}</dd></div>}
+        {org.website && (
+          <div><dt class="inline text-neutral-500">Website: </dt><dd class="inline"><a href={org.website} target="_blank" rel="noopener noreferrer">{org.website}</a></dd></div>
+        )}
+        <div><dt class="inline text-neutral-500">Geography: </dt><dd class="inline">{org.geography.join(', ')}</dd></div>
+        {companiesHouseUrl && (
+          <div><dt class="inline text-neutral-500">Companies House: </dt><dd class="inline"><a href={companiesHouseUrl} target="_blank" rel="noopener noreferrer">{org.companies_house_number}</a></dd></div>
+        )}
+        {charityCommissionUrl && (
+          <div><dt class="inline text-neutral-500">Charity Commission: </dt><dd class="inline"><a href={charityCommissionUrl} target="_blank" rel="noopener noreferrer">{org.charity_number}</a></dd></div>
+        )}
+      </dl>
+
+      <p class="mt-4 max-w-2xl text-neutral-800 dark:text-neutral-200">{org.summary}</p>
+    </header>
+
+    <section class="mt-10">
+      <h2 class="text-sm font-semibold uppercase tracking-wide text-neutral-500">Activity timeline</h2>
+      {activities.length === 0 ? (
+        <p class="mt-2 text-sm text-neutral-500">No sourced activity records.</p>
+      ) : (
+        <ol class="mt-3 space-y-3">
+          {activities.map((a) => (
+            <li class="border-l-2 border-neutral-300 pl-3 dark:border-neutral-700">
+              <div class="text-xs text-neutral-500">
+                {a.data.date} · {a.data.activity_type.replace('_', ' ')} · {a.data.confidence}
+              </div>
+              <p>
+                {a.data.description}
+                <SourceRefs sourceIds={a.data.source_ids} sourceMap={sourceMap} />
+              </p>
+              {a.data.amount && <p class="text-sm text-neutral-600 dark:text-neutral-400">Amount: {a.data.amount}</p>}
+              {a.data.counterparty_org_slug && (
+                <p class="text-sm text-neutral-600 dark:text-neutral-400">
+                  Counterparty: <a href={`/organisations/${a.data.counterparty_org_slug}`}>{orgName(a.data.counterparty_org_slug)}</a>
+                </p>
+              )}
+            </li>
+          ))}
+        </ol>
+      )}
+    </section>
+
+    <section class="mt-10">
+      <h2 class="text-sm font-semibold uppercase tracking-wide text-neutral-500">Funding</h2>
+      <div class="mt-3 grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <div>
+          <h3 class="text-sm font-medium">Funding in</h3>
+          {fundingIn.length === 0 ? (
+            <p class="mt-1 text-sm text-neutral-500">No sourced records.</p>
+          ) : (
+            <ul class="mt-1 space-y-2 text-sm">
+              {fundingIn.map((f) => (
+                <li>
+                  {f.data.funder_org_slug ? (
+                    <a href={`/organisations/${f.data.funder_org_slug}`}>{orgName(f.data.funder_org_slug)}</a>
+                  ) : (
+                    <span>{f.data.funder_name}</span>
+                  )}
+                  {' — '}{f.data.amount_band.replace('_', '–')} ({f.data.financial_year})
+                  <SourceRefs sourceIds={f.data.source_ids} sourceMap={sourceMap} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <div>
+          <h3 class="text-sm font-medium">Funding out</h3>
+          {fundingOut.length === 0 ? (
+            <p class="mt-1 text-sm text-neutral-500">No sourced records.</p>
+          ) : (
+            <ul class="mt-1 space-y-2 text-sm">
+              {fundingOut.map((f) => (
+                <li>
+                  <a href={`/organisations/${f.data.recipient_org_slug}`}>{orgName(f.data.recipient_org_slug)}</a>
+                  {' — '}{f.data.amount_band.replace('_', '–')} ({f.data.financial_year})
+                  <SourceRefs sourceIds={f.data.source_ids} sourceMap={sourceMap} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+    </section>
+
+    <section class="mt-10">
+      <h2 class="text-sm font-semibold uppercase tracking-wide text-neutral-500">Affiliations</h2>
+      {affiliations.length === 0 ? (
+        <p class="mt-2 text-sm text-neutral-500">No sourced affiliation records.</p>
+      ) : (
+        <ul class="mt-3 space-y-2 text-sm">
+          {affiliations.map((a) => {
+            const other = a.data.org_a_slug === org.slug ? a.data.org_b_slug : a.data.org_a_slug;
+            return (
+              <li>
+                <span class="tag">{a.data.relationship_type.replace('_', ' ')}</span>{' '}
+                <a href={`/organisations/${other}`}>{orgName(other)}</a>
+                {a.data.start && <span class="text-neutral-500"> · from {a.data.start}</span>}
+                {a.data.end && <span class="text-neutral-500"> to {a.data.end}</span>}
+                <SourceRefs sourceIds={a.data.source_ids} sourceMap={sourceMap} />
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
+
+    {replies.length > 0 && (
+      <section class="mt-10">
+        <h2 class="text-sm font-semibold uppercase tracking-wide text-neutral-500">Right of reply</h2>
+        <ul class="mt-3 space-y-4">
+          {replies.map((r) => (
+            <li class="border border-neutral-200 p-3 dark:border-neutral-800">
+              <div class="text-xs text-neutral-500">Received {r.data.received} · {r.data.respondent_role}</div>
+              <p class="mt-1 whitespace-pre-line">{r.data.text}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
+  </article>
+</Layout>

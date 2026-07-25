@@ -1,0 +1,28 @@
+---
+// Renders inline citation markers for one activity/funding/affiliation record.
+// Every claim MUST resolve to >=1 source with both an original_url and an
+// archive_url. If a source id fails to resolve, the claim is not rendered
+// (the caller is responsible for skipping records whose sources don't resolve).
+import type { CollectionEntry } from 'astro:content';
+
+interface Props {
+  sourceIds: string[];
+  sourceMap: Map<string, CollectionEntry<'sources'>['data']>;
+}
+
+const { sourceIds, sourceMap } = Astro.props;
+const resolved = sourceIds
+  .map((id) => sourceMap.get(id))
+  .filter((s): s is CollectionEntry<'sources'>['data'] => Boolean(s));
+---
+
+<sup class="ml-0.5 space-x-1 whitespace-nowrap">
+  {
+    resolved.map((s, i) => (
+      <span class="footnote-ref">
+        [<a href={s.original_url} target="_blank" rel="noopener noreferrer" title={s.title}>{i + 1}</a>{', '}
+        <a href={s.archive_url} target="_blank" rel="noopener noreferrer" title={`Archived copy: ${s.title}`}>archived</a>]
+      </span>
+    ))
+  }
+</sup>

@@ -1,0 +1,81 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Search from '../components/Search.astro';
+import { getPublishedOrganisations } from '../lib/data';
+import { getCollection } from 'astro:content';
+
+const orgs = await getPublishedOrganisations();
+const sources = await getCollection('sources');
+
+const sectorList = [
+  { id: 'higher_education', label: 'Higher education' },
+  { id: 'health', label: 'Health' },
+  { id: 'public_affairs', label: 'Public affairs' },
+  { id: 'security', label: 'Security' },
+  { id: 'media', label: 'Media' },
+  { id: 'politics', label: 'Politics' },
+];
+
+const orgTypes = [
+  'charity',
+  'company',
+  'membership_body',
+  'trade_association',
+  'think_tank',
+  'unincorporated',
+  'other',
+];
+
+function countBySector(id: string) {
+  return orgs.filter((o) => o.data.sectors.includes(id as any)).length;
+}
+function countByType(t: string) {
+  return orgs.filter((o) => o.data.legal_type === t).length;
+}
+---
+
+<Layout title="Home">
+  <section class="mb-10">
+    <h1 class="text-2xl font-semibold tracking-tight">A source-first register of advocacy and lobbying organisations</h1>
+    <p class="mt-2 max-w-2xl text-neutral-700 dark:text-neutral-300">
+      Every entry states what a public document shows about an organisation's activity, funding or
+      affiliations, with a citation to the original document and an independent archived copy.
+      Coverage begins with UK higher education and is designed to expand into other sectors.
+    </p>
+    <p class="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
+      {orgs.length} organisations published · {sources.length} cited sources
+    </p>
+  </section>
+
+  <section class="mb-10">
+    <Search />
+  </section>
+
+  <section class="mb-10">
+    <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-neutral-500">By sector</h2>
+    <ul class="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      {sectorList.map((s) => (
+        <li>
+          <a href={`/sectors/${s.id}`} class="flex items-baseline justify-between border border-neutral-200 px-3 py-2 no-underline hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-900">
+            <span>{s.label}</span>
+            <span class="text-xs text-neutral-500">{countBySector(s.id)}</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </section>
+
+  <section>
+    <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-neutral-500">By organisation type</h2>
+    <ul class="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      {orgTypes.map((t) => (
+        <li>
+          <a href={`/organisations?type=${t}`} class="flex items-baseline justify-between border border-neutral-200 px-3 py-2 no-underline hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-900">
+            <span>{t.replace('_', ' ')}</span>
+            <span class="text-xs text-neutral-500">{countByType(t)}</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </section>
+</Layout>

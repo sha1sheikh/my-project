@@ -1,0 +1,38 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getCollection } from 'astro:content';
+
+const sources = (await getCollection('sources')).sort((a, b) => (a.data.date < b.data.date ? 1 : -1));
+---
+
+<Layout title="Sources">
+  <h1 class="text-2xl font-semibold tracking-tight">Sources</h1>
+  <p class="mt-1 text-sm text-neutral-600 dark:text-neutral-400">{sources.length} cited documents.</p>
+
+  <div class="mt-4 overflow-x-auto">
+    <table class="register-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Publisher</th>
+          <th>Title</th>
+          <th>Type</th>
+          <th>Original</th>
+          <th>Archived</th>
+        </tr>
+      </thead>
+      <tbody>
+        {sources.map((s) => (
+          <tr id={s.data.id}>
+            <td class="whitespace-nowrap">{s.data.date}</td>
+            <td>{s.data.publisher}</td>
+            <td>{s.data.title}</td>
+            <td class="whitespace-nowrap">{s.data.type.replace('_', ' ')}</td>
+            <td><a href={s.data.original_url} target="_blank" rel="noopener noreferrer">source</a></td>
+            <td><a href={s.data.archive_url} target="_blank" rel="noopener noreferrer">archive</a></td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</Layout>

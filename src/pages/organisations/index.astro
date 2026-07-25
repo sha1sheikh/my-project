@@ -1,0 +1,126 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getPublishedOrganisations } from '../../lib/data';
+
+const orgs = await getPublishedOrganisations();
+
+const sectorList = [
+  'higher_education',
+  'health',
+  'public_affairs',
+  'security',
+  'media',
+  'politics',
+];
+const legalTypes = [
+  'charity',
+  'company',
+  'membership_body',
+  'trade_association',
+  'think_tank',
+  'unincorporated',
+  'other',
+];
+const geographies = [...new Set(orgs.flatMap((o) => o.data.geography))].sort();
+
+const rows = orgs
+  .map((o) => ({
+    slug: o.data.slug,
+    legal_name: o.data.legal_name,
+    other_names: o.data.other_names,
+    legal_type: o.data.legal_type,
+    sectors: o.data.sectors,
+    geography: o.data.geography,
+    summary: o.data.summary,
+  }))
+  .sort((a, b) => a.legal_name.localeCompare(b.legal_name));
+---
+
+<Layout title="Organisations">
+  <h1 class="text-2xl font-semibold tracking-tight">Organisations</h1>
+  <p class="mt-1 text-sm text-neutral-600 dark:text-neutral-400">{rows.length} published organisations.</p>
+
+  <div class="mt-4 flex flex-wrap gap-3 border border-neutral-200 p-3 text-sm dark:border-neutral-800">
+    <label class="flex flex-col gap-1">
+      <span class="text-xs uppercase tracking-wide text-neutral-500">Search</span>
+      <input id="f-text" type="text" placeholder="Name…" class="border border-neutral-300 px-2 py-1 dark:border-neutral-700 dark:bg-neutral-900" />
+    </label>
+    <label class="flex flex-col gap-1">
+      <span class="text-xs uppercase tracking-wide text-neutral-500">Sector</span>
+      <select id="f-sector" class="border border-neutral-300 px-2 py-1 dark:border-neutral-700 dark:bg-neutral-900">
+        <option value="">All</option>
+        {sectorList.map((s) => <option value={s}>{s.replace('_', ' ')}</option>)}
+      </select>
+    </label>
+    <label class="flex flex-col gap-1">
+      <span class="text-xs uppercase tracking-wide text-neutral-500">Legal type</span>
+      <select id="f-type" class="border border-neutral-300 px-2 py-1 dark:border-neutral-700 dark:bg-neutral-900">
+        <option value="">All</option>
+        {legalTypes.map((t) => <option value={t}>{t.replace('_', ' ')}</option>)}
+      </select>
+    </label>
+    <label class="flex flex-col gap-1">
+      <span class="text-xs uppercase tracking-wide text-neutral-500">Geography</span>
+      <select id="f-geo" class="border border-neutral-300 px-2 py-1 dark:border-neutral-700 dark:bg-neutral-900">
+        <option value="">All</option>
+        {geographies.map((g) => <option value={g}>{g}</option>)}
+      </select>
+    </label>
+  </div>
+
+  <ul id="org-list" class="mt-4 divide-y divide-neutral-200 dark:divide-neutral-800">
+    {rows.map((r) => (
+      <li
+        class="org-row py-3"
+        data-name={r.legal_name.toLowerCase()}
+        data-other-names={r.other_names.join(' ').toLowerCase()}
+        data-sectors={r.sectors.join(' ')}
+        data-type={r.legal_type}
+        data-geo={r.geography.join(' ')}
+      >
+        <a href={`/organisations/${r.slug}`} class="font-medium no-underline hover:underline">{r.legal_name}</a>
+        <span class="tag ml-2">{r.legal_type.replace('_', ' ')}</span>
+        {r.sectors.map((s) => <span class="tag ml-1">{s.replace('_', ' ')}</span>)}
+        <p class="mt-1 text-sm text-neutral-700 dark:text-neutral-300">{r.summary}</p>
+      </li>
+    ))}
+  </ul>
+  <p id="no-results" class="hidden mt-4 text-sm text-neutral-500">No organisations match these filters.</p>
+</Layout>
+
+<script is:inline>
+  const params = new URLSearchParams(location.search);
+  const textEl = document.getElementById('f-text');
+  const sectorEl = document.getElementById('f-sector');
+  const typeEl = document.getElementById('f-type');
+  const geoEl = document.getElementById('f-geo');
+  if (params.get('type')) typeEl.value = params.get('type');
+  if (params.get('sector')) sectorEl.value = params.get('sector');
+
+  function applyFilters() {
+    const text = textEl.value.trim().toLowerCase();
+    const sector = sectorEl.value;
+    const type = typeEl.value;
+    const geo = geoEl.value;
+    const rows = document.querySelectorAll('.org-row');
+    let visible = 0;
+    rows.forEach((row) => {
+      const name = row.getAttribute('data-name') || '';
+      const otherNames = row.getAttribute('data-other-names') || '';
+      const rowSectors = row.getAttribute('data-sectors') || '';
+      const rowType = row.getAttribute('data-type') || '';
+      const rowGeo = row.getAttribute('data-geo') || '';
+      const matchesText = !text || name.includes(text) || otherNames.includes(text);
+      const matchesSector = !sector || rowSectors.split(' ').includes(sector);
+      const matchesType = !type || rowType === type;
+      const matchesGeo = !geo || rowGeo.split(' ').includes(geo);
+      const show = matchesText && matchesSector && matchesType && matchesGeo;
+      row.classList.toggle('hidden', !show);
+      if (show) visible++;
+    });
+    document.getElementById('no-results').classList.toggle('hidden', visible !== 0);
+  }
+
+  [textEl, sectorEl, typeEl, geoEl].forEach((el) => el.addEventListener('input', applyFilters));
+  applyFilters();
+</script>

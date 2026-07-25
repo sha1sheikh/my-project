@@ -1,0 +1,16 @@
+---
+// Pagefind is generated as a post-build step (`pagefind --site dist`) and is
+// not present in dev mode. The UI script is loaded client-side and no-ops
+// gracefully if /pagefind/pagefind-ui.js is not yet built.
+---
+
+<div id="search" class="pagefind-search"></div>
+<link href="/pagefind/pagefind-ui.css" rel="stylesheet" />
+<script is:inline src="/pagefind/pagefind-ui.js" defer></script>
+<script is:inline>
+  window.addEventListener('DOMContentLoaded', () => {
+    if (typeof PagefindUI !== 'undefined') {
+      new PagefindUI({ element: '#search', showSubResults: true, showImages: false });
+    }
+  });
+</script>

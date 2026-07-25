@@ -1,0 +1,39 @@
+{
+  "name": "my-project",
+  "type": "module",
+  "version": "0.0.1",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "npm run validate && astro build && npm run search:index",
+    "search:index": "pagefind --site dist",
+    "preview": "astro preview",
+    "astro": "astro",
+    "validate": "tsx scripts/validate.ts",
+    "typecheck": "astro check",
+    "ingest:companies-house": "tsx scripts/companies-house.ts",
+    "ingest:charity-commission": "tsx scripts/charity-commission.ts",
+    "ingest:grants": "tsx scripts/grants.ts",
+    "ingest:lobbying-register": "tsx scripts/lobbying-register.ts",
+    "ingest:parliament": "tsx scripts/parliament.ts",
+    "ingest:archive": "tsx scripts/archive.ts"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/js-yaml": "^4.0.9",
+    "astro": "^7.1.3",
+    "gray-matter": "^4.0.3",
+    "js-yaml": "^5.2.2",
+    "pagefind": "^1.5.2",
+    "tailwindcss": "^4.3.3",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.9",
+    "@types/node": "^26.1.1",
+    "tsx": "^4.19.2",
+    "typescript": "^6.0.3"
+  }
+}
