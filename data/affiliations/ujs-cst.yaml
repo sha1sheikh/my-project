@@ -1,0 +1,6 @@
+id: ujs-cst
+org_a_slug: union-of-jewish-students
+org_b_slug: community-security-trust
+relationship_type: affiliated_with
+source_ids:
+  - ujs-supporters-page
