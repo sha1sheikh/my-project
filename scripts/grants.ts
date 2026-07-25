@@ -50,7 +50,7 @@ async function main() {
     const draft = {
       funder_org_slug: null,
       funder_name: funderName,
-      recipient_org_slug: role === 'recipient' ? undefined : undefined, // fill in real slugs
+      recipient_org_slug: null, // fill in a real slug if the recipient is in the directory, else leave null
       recipient_name: recipientName,
       amount_band: grant.amountAwarded ? toAmountBand(grant.amountAwarded) : 'undisclosed',
       financial_year: (grant.awardDate ?? '').slice(0, 4),

@@ -135,7 +135,11 @@ const statusLabel: Record<string, string> = {
             <ul class="mt-1 space-y-2 text-sm">
               {fundingOut.map((f) => (
                 <li>
-                  <a href={`/organisations/${f.data.recipient_org_slug}`}>{orgName(f.data.recipient_org_slug)}</a>
+                  {f.data.recipient_org_slug ? (
+                    <a href={`/organisations/${f.data.recipient_org_slug}`}>{orgName(f.data.recipient_org_slug)}</a>
+                  ) : (
+                    <span>{f.data.recipient_name}</span>
+                  )}
                   {' — '}{f.data.amount_band.replace('_', '–')} ({f.data.financial_year})
                   <SourceRefs sourceIds={f.data.source_ids} sourceMap={sourceMap} />
                 </li>

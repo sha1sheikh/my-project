@@ -1,0 +1,9 @@
+id: uk-toremet-regavim
+funder_org_slug: uk-toremet
+funder_name: UK Toremet Limited
+recipient_org_slug: null
+recipient_name: Regavim
+amount_band: 10k_50k
+financial_year: "2022"
+source_ids:
+  - guardian-charities-israeli-settlements

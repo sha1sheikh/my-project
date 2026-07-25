@@ -1,0 +1,13 @@
+id: kasner-susya-yeshiva-funding
+org_slug: kasner-charitable-trust
+date: "2025-07-18"
+sector: public_affairs
+activity_type: funding
+description: "Donated, together with UK Toremet acting as payment conduit, approximately £5.7m between 2017 and 2021 to the Bnei Akiva Yeshiva high school in Susya, a settlement in the Israeli-occupied West Bank, according to Guardian reporting."
+amount: "approximately £5.7m combined with UK Toremet, 2017-2021"
+counterparty_org_slug: uk-toremet
+source_ids:
+  - guardian-charities-israeli-settlements
+confidence: reported
+added: "2026-07-26"
+last_reviewed: "2026-07-26"
