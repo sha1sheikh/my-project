@@ -4,7 +4,10 @@ import SourceRefs from '../../components/SourceRefs.astro';
 import { getSourceMap, getActivitiesForSector, getAllOrganisations } from '../../lib/data';
 
 export async function getStaticPaths() {
-  const sectors = ['higher_education', 'health', 'public_affairs', 'security', 'media', 'politics'];
+  const sectors = [
+    'higher_education', 'health', 'public_affairs', 'security', 'media', 'politics',
+    'legal_affairs', 'government_affairs', 'community',
+  ];
   return sectors.map((s) => ({ params: { sector: s } }));
 }
 

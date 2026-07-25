@@ -21,6 +21,9 @@ export const sector = z.enum([
   'security',
   'media',
   'politics',
+  'legal_affairs',
+  'government_affairs',
+  'community',
 ]);
 
 export const orgStatus = z.enum(['published', 'under_review', 'right_of_reply_pending']);

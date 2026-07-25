@@ -10,6 +10,7 @@ website: https://www.ujia.org
 summary: United Jewish Israel Appeal is a registered charity. Its stated purpose is investing in youth and education projects in the UK Jewish community and in Israel, primarily the Galil region.
 sectors:
   - public_affairs
+  - community
 geography:
   - United Kingdom
 status: published

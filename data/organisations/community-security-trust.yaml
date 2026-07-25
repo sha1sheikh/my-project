@@ -10,6 +10,8 @@ website: https://cst.org.uk
 summary: Community Security Trust is a registered charity whose stated purpose is providing security advice, training and victim support to the UK Jewish community and monitoring antisemitic incidents. Its registered activities also include advocacy to police and government on those subjects.
 sectors:
   - security
+  - government_affairs
+  - community
 geography:
   - United Kingdom
 status: published

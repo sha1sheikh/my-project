@@ -1,0 +1,6 @@
+id: uklfi-limited-uklfi-charitable-trust
+org_a_slug: uklfi-limited
+org_b_slug: uklfi-charitable-trust
+relationship_type: parent
+source_ids:
+  - mee-uklfi-charity-commission-case
