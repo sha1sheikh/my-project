@@ -25,16 +25,39 @@ const activities = (await getActivitiesForSector(sector as string)).filter(
   (a) => hasResolvedSources(a.data.source_ids) && publishedSlugs.has(a.data.org_slug)
 );
 
+const orgsInSector = allOrgs
+  .filter((o) => o.data.status === 'published' && o.data.sectors.includes(sector as any))
+  .sort((a, b) => a.data.legal_name.localeCompare(b.data.legal_name));
+
 const label = (sector as string).replace('_', ' ');
 ---
 
 <Layout title={`Sector: ${label}`}>
   <h1 class="text-2xl font-semibold tracking-tight capitalize">{label}</h1>
   <p class="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
-    Every sourced activity record across all organisations tagged with this sector, most recent first.
+    Organisations tagged with this sector, and every sourced activity record across them, most recent first.
   </p>
 
-  {activities.length === 0 ? (
+  <section class="mt-6">
+    <h2 class="text-sm font-semibold uppercase tracking-wide text-neutral-500">Organisations</h2>
+    {orgsInSector.length === 0 ? (
+      <p class="mt-2 text-sm text-neutral-500">No organisations tagged with this sector yet.</p>
+    ) : (
+      <ul class="mt-3 flex flex-wrap gap-2">
+        {orgsInSector.map((o) => (
+          <li>
+            <a href={`/organisations/${o.data.slug}`} class="tag no-underline hover:bg-neutral-50 dark:hover:bg-neutral-900">
+              {o.data.legal_name}
+            </a>
+          </li>
+        ))}
+      </ul>
+    )}
+  </section>
+
+  <section class="mt-8">
+    <h2 class="text-sm font-semibold uppercase tracking-wide text-neutral-500">Activity timeline</h2>
+    {activities.length === 0 ? (
     <p class="mt-4 text-sm text-neutral-500">No sourced activity records for this sector yet.</p>
   ) : (
     <ol class="mt-6 space-y-3">
@@ -51,4 +74,5 @@ const label = (sector as string).replace('_', ' ');
       ))}
     </ol>
   )}
+  </section>
 </Layout>
