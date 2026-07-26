@@ -3,6 +3,24 @@
 @theme {
   --font-serif: 'Georgia', 'Iowan Old Style', 'Times New Roman', serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace;
+
+  /* Register-of-record palette: navy accent, warm off-white paper, a
+     cool-grey (not true-grey) neutral scale for body text and rules. */
+  --color-paper: #faf8f3;
+  --color-accent: #1b3a6b;
+  --color-accent-dark: #6f93c9;
+
+  --color-neutral-50: #f7f8fa;
+  --color-neutral-100: #eef0f4;
+  --color-neutral-200: #dde1e8;
+  --color-neutral-300: #c3c9d4;
+  --color-neutral-400: #9aa3b2;
+  --color-neutral-500: #707a8c;
+  --color-neutral-600: #545e70;
+  --color-neutral-700: #3d4556;
+  --color-neutral-800: #262c3a;
+  --color-neutral-900: #1b212c;
+  --color-neutral-950: #10131a;
 }
 
 @layer base {
@@ -10,13 +28,13 @@
     font-family: var(--font-serif);
   }
   body {
-    @apply bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100;
+    @apply bg-paper text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100;
   }
   a {
-    @apply underline decoration-neutral-400 underline-offset-2 hover:decoration-neutral-900 dark:hover:decoration-neutral-100;
+    @apply text-accent underline decoration-accent/40 underline-offset-2 hover:decoration-accent dark:text-accent-dark dark:decoration-accent-dark/40 dark:hover:decoration-accent-dark;
   }
   ::selection {
-    @apply bg-yellow-200 text-black;
+    @apply bg-accent/20 text-neutral-900;
   }
 }
 
