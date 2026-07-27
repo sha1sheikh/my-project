@@ -298,7 +298,6 @@ function main() {
     }
   }
 
-  const disclosuresByOrg = new Map<string, number>();
   for (const { file, data } of disclosures) {
     const result = disclosureSchema.safeParse(data);
     if (!result.success) {
@@ -311,12 +310,7 @@ function main() {
     if (!result.data.source.archive_url || result.data.source.archive_url.trim() === '') {
       errors.push({ file, message: 'disclosure has an empty source.archive_url' });
     }
-    disclosuresByOrg.set(result.data.organisation, (disclosuresByOrg.get(result.data.organisation) ?? 0) + 1);
   }
-  // Note: no "organisation with zero disclosures" check here yet - deferred
-  // pending a migration plan for organisations that predate this collection.
-  // See project notes; do not add this check without confirming first, since
-  // it would currently fail every organisation in /data/organisations.
 
   // Duplicate id/slug checks across each collection.
   function checkDuplicates(label: string, files: { file: string; data: unknown }[], keyFn: (d: any) => string | undefined) {
