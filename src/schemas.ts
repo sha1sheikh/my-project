@@ -77,6 +77,25 @@ export const amountBand = z.enum([
   'undisclosed',
 ]);
 
+export const registerType = z.enum([
+  'consultant_lobbyist',
+  'appg_secretariat',
+  'declared_donation',
+  'committee_evidence',
+  'public_contract',
+  'disclosed_meeting',
+  'rmfi_declaration',
+]);
+
+export const counterpartyType = z.enum([
+  'university',
+  'government_department',
+  'appg',
+  'select_committee',
+  'funder',
+  'other',
+]);
+
 export const slug = z.string().regex(/^[a-z0-9][a-z0-9_-]*$/, 'must be a lowercase slug');
 export const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'must be an ISO date (YYYY-MM-DD)');
 
@@ -172,6 +191,35 @@ export const eventSchema = z
     summary: z.string().max(300).optional(),
     date: z.string().optional(),
     activity_ids: z.array(slug).min(1),
+  })
+  .strict();
+
+// disclosure: one documented act on one named public register. Deliberately
+// has no freeform prose field and no field for a named individual — every
+// value is either a controlled enum, a short label, a date, or a URL. See
+// scripts/validate.ts FORBIDDEN_KEYS for the second layer of defence against
+// a person-shaped field being added here later.
+export const disclosureSchema = z
+  .object({
+    id: slug,
+    organisation: slug,
+    register_type: registerType,
+    date: isoDate,
+    date_end: isoDate.optional(),
+    counterparty: z
+      .object({
+        name: z.string().min(1).max(120, 'counterparty.name must be a short label, not prose'),
+        type: counterpartyType,
+      })
+      .strict(),
+    source: z
+      .object({
+        original_url: z.string().url(),
+        archive_url: z.string().url().min(1, 'archive_url is required'),
+        retrieved_on: isoDate,
+      })
+      .strict(),
+    last_verified: isoDate,
   })
   .strict();
 

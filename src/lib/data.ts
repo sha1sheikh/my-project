@@ -52,3 +52,28 @@ export async function getActivitiesForSector(sectorId: string) {
     .filter((a) => a.data.sector === sectorId)
     .sort((a, b) => (a.data.date < b.data.date ? 1 : -1));
 }
+
+/** Stable, URL-safe id for a counterparty, derived from its name — there is
+ * no separate counterparty collection, since a disclosure's counterparty is
+ * just a {name, type} pair, not a tracked entity in its own right. */
+export function slugifyCounterparty(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+export async function getAllDisclosures() {
+  const all = await getCollection('disclosures');
+  return all.sort((a, b) => (a.data.date < b.data.date ? 1 : -1));
+}
+
+export async function getDisclosuresForOrg(slug: string) {
+  const all = await getAllDisclosures();
+  return all.filter((d) => d.data.organisation === slug);
+}
+
+export async function getDisclosuresForCounterparty(counterpartySlug: string) {
+  const all = await getAllDisclosures();
+  return all.filter((d) => slugifyCounterparty(d.data.counterparty.name) === counterpartySlug);
+}

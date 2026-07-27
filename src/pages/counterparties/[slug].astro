@@ -1,0 +1,67 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getAllDisclosures, getAllOrganisations, slugifyCounterparty } from '../../lib/data';
+
+export async function getStaticPaths() {
+  const disclosures = await getAllDisclosures();
+  const bySlug = new Map<string, string>();
+  for (const d of disclosures) {
+    const s = slugifyCounterparty(d.data.counterparty.name);
+    if (!bySlug.has(s)) bySlug.set(s, d.data.counterparty.name);
+  }
+  return [...bySlug.entries()].map(([slug, name]) => ({ params: { slug }, props: { name } }));
+}
+
+const { slug } = Astro.params;
+const { name } = Astro.props;
+
+const allOrgs = await getAllOrganisations();
+const publishedSlugs = new Set(allOrgs.filter((o) => o.data.status === 'published').map((o) => o.data.slug));
+const orgName = (s: string) => allOrgs.find((o) => o.data.slug === s)?.data.legal_name ?? s;
+
+const disclosures = (await getAllDisclosures()).filter(
+  (d) => slugifyCounterparty(d.data.counterparty.name) === slug && publishedSlugs.has(d.data.organisation)
+);
+
+const orgSlugs = [...new Set(disclosures.map((d) => d.data.organisation))].sort((a, b) =>
+  orgName(a).localeCompare(orgName(b))
+);
+
+const registerTypeLabel: Record<string, string> = {
+  consultant_lobbyist: 'Consultant lobbyist register',
+  appg_secretariat: 'APPG secretariat',
+  declared_donation: 'Declared donation',
+  committee_evidence: 'Committee evidence',
+  public_contract: 'Public contract',
+  disclosed_meeting: 'Disclosed meeting',
+  rmfi_declaration: 'RMFI declaration',
+};
+---
+
+<Layout title={`Counterparty: ${name}`}>
+  <h1 class="text-2xl font-semibold tracking-tight">{name}</h1>
+  <p class="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+    Every organisation with a documented disclosure involving this counterparty.
+  </p>
+
+  {orgSlugs.length === 0 ? (
+    <p class="mt-6 text-sm text-neutral-500">No organisations found.</p>
+  ) : (
+    <ul class="mt-6 divide-y divide-neutral-200 dark:divide-neutral-800">
+      {orgSlugs.map((slug) => (
+        <li class="py-4">
+          <a class="font-medium no-underline hover:underline" href={`/organisations/${slug}`}>{orgName(slug)}</a>
+          <ul class="mt-2 space-y-1 text-sm text-neutral-600 dark:text-neutral-400">
+            {disclosures
+              .filter((d) => d.data.organisation === slug)
+              .map((d) => (
+                <li>
+                  {d.data.date} · {registerTypeLabel[d.data.register_type]}
+                </li>
+              ))}
+          </ul>
+        </li>
+      ))}
+    </ul>
+  )}
+</Layout>

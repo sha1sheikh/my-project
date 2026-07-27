@@ -18,6 +18,7 @@ import {
   eventSchema,
   correctionSchema,
   submissionSchema,
+  disclosureSchema,
 } from '../src/schemas';
 
 const DATA_DIR = join(import.meta.dirname, '..', 'data');
@@ -37,6 +38,7 @@ const FORBIDDEN_KEYS = [
   'trustee',
   'trustees',
   'director_name',
+  'named_person',
   'name_of_person',
   'full_name',
   'first_name',
@@ -87,10 +89,13 @@ function scanForbiddenKeys(file: string, data: unknown, path = ''): void {
     return;
   }
   for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
-    if (FORBIDDEN_KEYS.includes(key.toLowerCase())) {
+    const lower = key.toLowerCase();
+    const segments = lower.split('_');
+    const isForbidden = FORBIDDEN_KEYS.includes(lower) || segments.some((s) => FORBIDDEN_KEYS.includes(s));
+    if (isForbidden) {
       errors.push({
         file,
-        message: `forbidden key "${path}${path ? '.' : ''}${key}" is not permitted anywhere in the data model (person/officer/trustee/evaluative fields are banned)`,
+        message: `forbidden key "${path}${path ? '.' : ''}${key}" is not permitted anywhere in the data model (person/officer/trustee/evaluative fields are banned, including as part of a compound key)`,
       });
     }
     scanForbiddenKeys(file, value, `${path}${path ? '.' : ''}${key}`);
@@ -149,10 +154,11 @@ function main() {
   const events = loadYamlFiles(join(DATA_DIR, 'events'));
   const corrections = loadYamlFiles(join(DATA_DIR, 'corrections'));
   const submissions = loadYamlFiles(join(DATA_DIR, 'submissions'));
+  const disclosures = loadYamlFiles(join(DATA_DIR, 'disclosures'));
 
   const all = [
     ...organisations, ...sources, ...activities, ...funding, ...affiliations,
-    ...rightOfReply, ...events, ...corrections, ...submissions,
+    ...rightOfReply, ...events, ...corrections, ...submissions, ...disclosures,
   ];
   for (const { file, data } of all) scanForbiddenKeys(file, data);
 
@@ -292,6 +298,26 @@ function main() {
     }
   }
 
+  const disclosuresByOrg = new Map<string, number>();
+  for (const { file, data } of disclosures) {
+    const result = disclosureSchema.safeParse(data);
+    if (!result.success) {
+      for (const issue of result.error.issues) {
+        errors.push({ file, message: `${issue.path.join('.')}: ${issue.message}` });
+      }
+      continue;
+    }
+    checkOrgSlug(file, 'organisation', result.data.organisation);
+    if (!result.data.source.archive_url || result.data.source.archive_url.trim() === '') {
+      errors.push({ file, message: 'disclosure has an empty source.archive_url' });
+    }
+    disclosuresByOrg.set(result.data.organisation, (disclosuresByOrg.get(result.data.organisation) ?? 0) + 1);
+  }
+  // Note: no "organisation with zero disclosures" check here yet - deferred
+  // pending a migration plan for organisations that predate this collection.
+  // See project notes; do not add this check without confirming first, since
+  // it would currently fail every organisation in /data/organisations.
+
   // Duplicate id/slug checks across each collection.
   function checkDuplicates(label: string, files: { file: string; data: unknown }[], keyFn: (d: any) => string | undefined) {
     const seen = new Map<string, string>();
@@ -308,8 +334,9 @@ function main() {
   checkDuplicates('organisation slug', organisations, (d) => d?.slug);
   checkDuplicates('source id', sources, (d) => d?.id);
   checkDuplicates('activity id', activities, (d) => d?.id);
+  checkDuplicates('disclosure id', disclosures, (d) => d?.id);
 
-  console.log(`Checked ${organisations.length} organisations, ${sources.length} sources, ${activities.length} activities, ${funding.length} funding records, ${affiliations.length} affiliations, ${rightOfReply.length} right-of-reply entries, ${events.length} events, ${corrections.length} corrections, ${submissions.length} queued submissions.\n`);
+  console.log(`Checked ${organisations.length} organisations, ${sources.length} sources, ${activities.length} activities, ${funding.length} funding records, ${affiliations.length} affiliations, ${rightOfReply.length} right-of-reply entries, ${events.length} events, ${corrections.length} corrections, ${submissions.length} queued submissions, ${disclosures.length} disclosures.\n`);
 
   if (warnings.length > 0) {
     console.warn(`${warnings.length} warning(s):`);

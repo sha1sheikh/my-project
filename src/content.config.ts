@@ -10,6 +10,7 @@ import {
   eventSchema,
   correctionSchema,
   submissionSchema,
+  disclosureSchema,
 } from './schemas';
 
 // Data lives in /data at the repo root (not src/content) so it reads as a
@@ -61,6 +62,11 @@ const submissions = defineCollection({
   schema: submissionSchema,
 });
 
+const disclosures = defineCollection({
+  loader: glob({ pattern: '**/*.yaml', base: 'data/disclosures' }),
+  schema: disclosureSchema,
+});
+
 export const collections = {
   organisations,
   sources,
@@ -71,4 +77,5 @@ export const collections = {
   events,
   corrections,
   submissions,
+  disclosures,
 };

@@ -1,0 +1,53 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { getAllDisclosures, getAllOrganisations, slugifyCounterparty } from '../lib/data';
+
+const allOrgs = await getAllOrganisations();
+const publishedSlugs = new Set(allOrgs.filter((o) => o.data.status === 'published').map((o) => o.data.slug));
+const orgName = (s: string) => allOrgs.find((o) => o.data.slug === s)?.data.legal_name ?? s;
+
+const disclosures = (await getAllDisclosures()).filter((d) => publishedSlugs.has(d.data.organisation));
+
+const registerTypeLabel: Record<string, string> = {
+  consultant_lobbyist: 'Consultant lobbyist register',
+  appg_secretariat: 'APPG secretariat',
+  declared_donation: 'Declared donation',
+  committee_evidence: 'Committee evidence',
+  public_contract: 'Public contract',
+  disclosed_meeting: 'Disclosed meeting',
+  rmfi_declaration: 'RMFI declaration',
+};
+---
+
+<Layout title="Recent disclosures">
+  <h1 class="text-2xl font-semibold tracking-tight">Recent disclosures</h1>
+  <p class="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+    Every disclosure across all organisations, most recent first.
+  </p>
+
+  {disclosures.length === 0 ? (
+    <p class="mt-6 text-sm text-neutral-500">No disclosures recorded yet.</p>
+  ) : (
+    <ol class="mt-6 space-y-3">
+      {disclosures.map((d) => (
+        <li class="border-l-2 border-neutral-300 pl-3 dark:border-neutral-700">
+          <div class="text-xs text-neutral-500">
+            {d.data.date}{d.data.date_end && <> – {d.data.date_end}</>} ·{' '}
+            <a href={`/organisations/${d.data.organisation}`}>{orgName(d.data.organisation)}</a> ·{' '}
+            {registerTypeLabel[d.data.register_type]}
+          </div>
+          <p>
+            Counterparty: <a href={`/counterparties/${slugifyCounterparty(d.data.counterparty.name)}`}>{d.data.counterparty.name}</a>{' '}
+            <span class="tag">{d.data.counterparty.type.replace('_', ' ')}</span>
+            <sup class="ml-0.5 space-x-1 whitespace-nowrap">
+              <span class="footnote-ref">
+                [<a href={d.data.source.original_url} target="_blank" rel="noopener noreferrer">source</a>,{' '}
+                <a href={d.data.source.archive_url} target="_blank" rel="noopener noreferrer">archived</a>]
+              </span>
+            </sup>
+          </p>
+        </li>
+      ))}
+    </ol>
+  )}
+</Layout>

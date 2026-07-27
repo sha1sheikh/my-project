@@ -9,7 +9,19 @@ import {
   getFundingForOrg,
   getAffiliationsForOrg,
   getRepliesForOrg,
+  getDisclosuresForOrg,
+  slugifyCounterparty,
 } from '../../lib/data';
+
+const registerTypeLabel: Record<string, string> = {
+  consultant_lobbyist: 'Consultant lobbyist register',
+  appg_secretariat: 'APPG secretariat',
+  declared_donation: 'Declared donation',
+  committee_evidence: 'Committee evidence',
+  public_contract: 'Public contract',
+  disclosed_meeting: 'Disclosed meeting',
+  rmfi_declaration: 'RMFI declaration',
+};
 
 export async function getStaticPaths() {
   const orgs = await getPublishedOrganisations();
@@ -31,6 +43,7 @@ const fundingIn = funding.in.filter((f) => hasResolvedSources(f.data.source_ids)
 const fundingOut = funding.out.filter((f) => hasResolvedSources(f.data.source_ids));
 const affiliations = (await getAffiliationsForOrg(org.slug)).filter((a) => hasResolvedSources(a.data.source_ids));
 const replies = await getRepliesForOrg(org.slug);
+const disclosures = (await getDisclosuresForOrg(org.slug)).filter((d) => d.data.source.archive_url);
 
 const companiesHouseUrl = org.companies_house_number
   ? `https://find-and-update.company-information.service.gov.uk/company/${org.companies_house_number}`
@@ -76,6 +89,33 @@ const statusLabel: Record<string, string> = {
 
       <p class="mt-4 max-w-2xl text-neutral-800 dark:text-neutral-200">{org.summary}</p>
     </header>
+
+    {disclosures.length > 0 && (
+      <section class="mt-10">
+        <h2 class="text-sm font-semibold uppercase tracking-wide text-neutral-500">Disclosures</h2>
+        <ol class="mt-3 space-y-3">
+          {disclosures.map((d) => (
+            <li class="border-l-2 border-neutral-300 pl-3 dark:border-neutral-700">
+              <div class="text-xs text-neutral-500">
+                {d.data.date}{d.data.date_end && <> – {d.data.date_end}</>} · {registerTypeLabel[d.data.register_type]}
+              </div>
+              <p>
+                Counterparty:{' '}
+                <a href={`/counterparties/${slugifyCounterparty(d.data.counterparty.name)}`}>{d.data.counterparty.name}</a>{' '}
+                <span class="tag">{d.data.counterparty.type.replace('_', ' ')}</span>
+                <sup class="ml-0.5 space-x-1 whitespace-nowrap">
+                  <span class="footnote-ref">
+                    [<a href={d.data.source.original_url} target="_blank" rel="noopener noreferrer">source</a>,{' '}
+                    <a href={d.data.source.archive_url} target="_blank" rel="noopener noreferrer">archived</a>]
+                  </span>
+                </sup>
+              </p>
+              <p class="text-xs text-neutral-500">Last verified {d.data.last_verified}</p>
+            </li>
+          ))}
+        </ol>
+      </section>
+    )}
 
     <section class="mt-10">
       <h2 class="text-sm font-semibold uppercase tracking-wide text-neutral-500">Activity timeline</h2>
